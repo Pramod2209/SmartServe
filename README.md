@@ -60,11 +60,6 @@ src/
 - Manage services, technicians, and bookings
 - User management
 
-## Default Login Credentials (Mock)
-
-**Customer**: customer@example.com / password123
-**Technician**: technician@example.com / password123
-**Admin**: admin@example.com / password123
 
 ---
 
