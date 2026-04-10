@@ -6,8 +6,8 @@ import Badge from '../../components/Badge';
 import Modal from '../../components/Modal';
 import Alert from '../../components/Alert';
 import { CUSTOMER_MENU } from '../../utils/menuConfig';
-import { Calendar, Clock, MapPin, User } from 'lucide-react';
-import { bookingsAPI, getUser } from '../../utils/api';
+import { Calendar, Clock, MapPin, Star, User } from 'lucide-react';
+import { bookingsAPI, getUser, reviewsAPI } from '../../utils/api';
 
 /**
  * My Services Page
@@ -19,6 +19,13 @@ const MyServices = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
+  const [feedbackError, setFeedbackError] = useState('');
+  const [feedbackSuccess, setFeedbackSuccess] = useState('');
+  const [isSavingFeedback, setIsSavingFeedback] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState({
+    rating: 0,
+    comment: '',
+  });
 
   useEffect(() => {
     const loadBookings = async () => {
@@ -43,14 +50,93 @@ const MyServices = () => {
       status: booking.status,
       address: booking.address,
       description: booking.description,
+      reviewId: booking.review_id,
+      reviewRating: booking.review_rating,
+      reviewComment: booking.review_comment,
     })),
     [bookings]
   );
 
   const handleViewDetails = (booking) => {
+    setFeedbackError('');
+    setFeedbackSuccess('');
+    setFeedbackForm({
+      rating: booking.reviewRating || 0,
+      comment: booking.reviewComment || '',
+    });
     setSelectedBooking(booking);
     setIsModalOpen(true);
   };
+
+  const refreshBookings = async () => {
+    const response = await bookingsAPI.getAll();
+    const updatedBookings = response.bookings || [];
+    setBookings(updatedBookings);
+
+    if (selectedBooking) {
+      const latest = updatedBookings.find((b) => b.id === selectedBooking.id);
+      if (latest) {
+        setSelectedBooking({
+          id: latest.id,
+          service: latest.service_name,
+          date: latest.booking_date,
+          time: latest.booking_time,
+          technician: latest.technician_name,
+          status: latest.status,
+          address: latest.address,
+          description: latest.description,
+          reviewId: latest.review_id,
+          reviewRating: latest.review_rating,
+          reviewComment: latest.review_comment,
+        });
+      }
+    }
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!selectedBooking) return;
+
+    setFeedbackError('');
+    setFeedbackSuccess('');
+
+    if (!feedbackForm.rating) {
+      setFeedbackError('Please select a rating before submitting feedback.');
+      return;
+    }
+
+    try {
+      setIsSavingFeedback(true);
+      await reviewsAPI.upsert({
+        bookingId: selectedBooking.id,
+        rating: feedbackForm.rating,
+        comment: feedbackForm.comment,
+      });
+      setFeedbackSuccess('Thank you. Your feedback was submitted successfully.');
+      await refreshBookings();
+    } catch (err) {
+      setFeedbackError(err.message || 'Failed to submit feedback');
+    } finally {
+      setIsSavingFeedback(false);
+    }
+  };
+
+  const renderStarPicker = () => (
+    <div className="flex items-center gap-2">
+      {[1, 2, 3, 4, 5].map((value) => (
+        <button
+          key={value}
+          type="button"
+          onClick={() => setFeedbackForm((prev) => ({ ...prev, rating: value }))}
+          className="p-1"
+          aria-label={`Set rating to ${value}`}
+        >
+          <Star
+            className={`w-6 h-6 ${value <= feedbackForm.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+          />
+        </button>
+      ))}
+    </div>
+  );
 
   const breadcrumbItems = [
     { label: 'Dashboard', path: '/customer/dashboard' },
@@ -212,6 +298,69 @@ const MyServices = () => {
               <p className="text-sm text-gray-600 mb-1">Issue Description</p>
               <p className="text-gray-900">{selectedBooking.description}</p>
             </div>
+
+            {/* Feedback Section */}
+            {selectedBooking.status === 'completed' && (
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="text-base font-semibold text-gray-900 mb-3">
+                  Feedback & Rating
+                </h3>
+
+                {selectedBooking.reviewId && (
+                  <p className="text-sm text-green-700 mb-3">
+                    You have already submitted feedback for this service. You can update it anytime.
+                  </p>
+                )}
+
+                <div className="mb-3">
+                  <p className="text-sm text-gray-600 mb-2">Your Rating</p>
+                  {renderStarPicker()}
+                </div>
+
+                <div className="mb-3">
+                  <label className="block text-sm text-gray-600 mb-2" htmlFor="feedback-comment">
+                    Comments
+                  </label>
+                  <textarea
+                    id="feedback-comment"
+                    rows={4}
+                    value={feedbackForm.comment}
+                    onChange={(e) =>
+                      setFeedbackForm((prev) => ({ ...prev, comment: e.target.value }))
+                    }
+                    placeholder="Share your experience with this service"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+
+                {feedbackError && (
+                  <Alert
+                    type="error"
+                    message={feedbackError}
+                    onClose={() => setFeedbackError('')}
+                    className="mb-3"
+                  />
+                )}
+
+                {feedbackSuccess && (
+                  <Alert
+                    type="success"
+                    message={feedbackSuccess}
+                    onClose={() => setFeedbackSuccess('')}
+                    className="mb-3"
+                  />
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleSubmitFeedback}
+                  disabled={isSavingFeedback}
+                  className="btn btn-primary"
+                >
+                  {isSavingFeedback ? 'Saving...' : selectedBooking.reviewId ? 'Update Feedback' : 'Submit Feedback'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </Modal>

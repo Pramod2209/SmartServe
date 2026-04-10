@@ -10,28 +10,21 @@ cd server
 npm install
 ```
 
-### 2. Database Setup
+### 2. Database Setup (Neon)
 
-#### Install PostgreSQL
-- **Windows**: Download from https://www.postgresql.org/download/windows/
-- **Mac**: `brew install postgresql`
-- **Linux**: `sudo apt-get install postgresql`
-
-#### Create Database
+Initialize Neon and create/load your connection string:
 ```bash
-# Login to PostgreSQL
-psql -U postgres
-
-# Create database
-CREATE DATABASE smart_serve;
-
-# Exit
-\q
+npx neonctl@latest init
 ```
 
-#### Run Database Schema
+Copy the pooled Postgres connection string and add it to `.env`:
+```env
+DATABASE_URL=postgresql://<user>:<password>@<host>/<db>?sslmode=require
+```
+
+Then run the schema against Neon:
 ```bash
-psql -U postgres -d smart_serve -f database/schema.sql
+psql "<YOUR_DATABASE_URL>" -f database/schema.sql
 ```
 
 ### 3. Environment Configuration
@@ -39,7 +32,7 @@ psql -U postgres -d smart_serve -f database/schema.sql
 # Copy example env file
 cp .env.example .env
 
-# Edit .env and add your database credentials
+# Edit .env and add DATABASE_URL from Neon
 ```
 
 ### 4. Start Server

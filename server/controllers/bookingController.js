@@ -40,10 +40,12 @@ export const getBookings = async (req, res) => {
     } else {
       // Customer sees their own bookings
       result = await query(
-        `SELECT b.*, t.id as tech_id, u.full_name as technician_name, u.phone as technician_phone
+        `SELECT b.*, t.id as tech_id, u.full_name as technician_name, u.phone as technician_phone,
+         r.id as review_id, r.rating as review_rating, r.comment as review_comment
          FROM bookings b
          LEFT JOIN technicians t ON b.technician_id = t.id
          LEFT JOIN users u ON t.user_id = u.id
+         LEFT JOIN reviews r ON r.booking_id = b.id AND r.customer_id = $1
          WHERE b.customer_id = $1
          ORDER BY b.created_at DESC`,
         [id]

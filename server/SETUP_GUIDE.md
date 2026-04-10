@@ -3,51 +3,36 @@
 ## Prerequisites
 
 1. **Node.js** (v16 or higher) - [Download](https://nodejs.org/)
-2. **PostgreSQL** (v12 or higher) - [Download](https://www.postgresql.org/download/)
+2. **Neon account/project** - [Neon](https://neon.tech/)
+3. **psql client** (optional, to run schema manually)
 
 ---
 
-## Step 1: Install PostgreSQL
+## Step 1: Initialize Neon Database
 
-### Windows
-1. Download PostgreSQL installer from https://www.postgresql.org/download/windows/
-2. Run installer and follow the setup wizard
-3. Remember the password you set for the `postgres` user
-4. Default port: 5432
-
-### Verify Installation
-Open Command Prompt or PowerShell:
+Run the Neon CLI initializer:
 ```bash
-psql --version
+npx neonctl@latest init
 ```
+
+This creates/selects a Neon project and gives you a pooled `DATABASE_URL` connection string.
 
 ---
 
-## Step 2: Create Database
+## Step 2: Configure Environment Variables
 
-### Method 1: Using pgAdmin (GUI)
-1. Open pgAdmin (installed with PostgreSQL)
-2. Connect to PostgreSQL server
-3. Right-click "Databases" → "Create" → "Database"
-4. Name: `smart_serve`
-5. Click "Save"
-
-### Method 2: Using Command Line
 ```bash
-# Login to PostgreSQL
-psql -U postgres
-
-# Enter your postgres password when prompted
-
-# Create database
-CREATE DATABASE smart_serve;
-
-# Verify database was created
-\l
-
-# Exit
-\q
+# The .env file is already present
+notepad .env
 ```
+
+Set the Neon URL in `.env`:
+```env
+DATABASE_URL=postgresql://<user>:<password>@<host>/<db>?sslmode=require
+JWT_SECRET=change_this_to_a_random_secure_string
+```
+
+Optional fallback vars (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`) are only used if `DATABASE_URL` is empty.
 
 ---
 
@@ -57,10 +42,8 @@ CREATE DATABASE smart_serve;
 # Navigate to server directory
 cd server
 
-# Run schema file (Windows)
-psql -U postgres -d smart_serve -f database/schema.sql
-
-# Enter postgres password when prompted
+# Run schema file against Neon
+psql "<YOUR_DATABASE_URL>" -f database/schema.sql
 ```
 
 This will:
@@ -75,25 +58,7 @@ This will:
 
 ---
 
-## Step 4: Configure Environment Variables
-
-```bash
-# The .env file is already created with default values
-# Edit if needed (especially DB_PASSWORD)
-
-# Open .env file in notepad
-notepad .env
-```
-
-Update these values if needed:
-```env
-DB_PASSWORD=your_postgres_password_here
-JWT_SECRET=change_this_to_a_random_secure_string
-```
-
----
-
-## Step 5: Install Dependencies
+## Step 4: Install Dependencies
 
 ```bash
 # Make sure you're in the server directory
@@ -113,7 +78,7 @@ This will install:
 
 ---
 
-## Step 6: Start the Server
+## Step 5: Start the Server
 
 ### Development Mode (with auto-reload)
 ```bash
@@ -138,7 +103,7 @@ You should see:
 
 ---
 
-## Step 7: Test the API
+## Step 6: Test the API
 
 Open browser or use Postman:
 ```
@@ -156,7 +121,7 @@ You should see:
 
 ---
 
-## Step 8: Start Frontend
+## Step 7: Start Frontend
 
 In a new terminal:
 ```bash
@@ -175,21 +140,20 @@ Backend API runs on: http://localhost:5000
 ## Troubleshooting
 
 ### "Connection refused" or "ECONNREFUSED"
-- PostgreSQL service is not running
-- Solution: Start PostgreSQL service
-  - Windows: Open Services → PostgreSQL → Start
+- `DATABASE_URL` is incorrect or Neon project/branch is unavailable
+- Solution: Re-run `npx neonctl@latest init` and paste the new pooled URL
 
 ### "password authentication failed"
-- Wrong password in `.env` file
-- Solution: Update `DB_PASSWORD` in server/.env
+- Wrong credentials in `DATABASE_URL`
+- Solution: regenerate and replace `DATABASE_URL`
 
 ### "database does not exist"
-- Database not created
-- Solution: Run `CREATE DATABASE smart_serve;` in psql
+- The Neon DB/branch in your URL does not exist
+- Solution: create the branch/db in Neon and update `DATABASE_URL`
 
 ### "relation does not exist"
 - Schema not run
-- Solution: Run schema file: `psql -U postgres -d smart_serve -f database/schema.sql`
+- Solution: Run schema file: `psql "<YOUR_DATABASE_URL>" -f database/schema.sql`
 
 ### Port 5000 already in use
 - Another application is using port 5000
@@ -254,6 +218,6 @@ For production deployment:
 
 Recommended hosting platforms:
 - **Backend**: Render, Railway, Heroku
-- **Database**: Render PostgreSQL, AWS RDS, Supabase
+- **Database**: Neon, Render PostgreSQL, AWS RDS, Supabase
 - **Frontend**: Vercel, Netlify
 

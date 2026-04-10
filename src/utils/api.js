@@ -163,3 +163,13 @@ export const techniciansAPI = {
     body: JSON.stringify({ verified }),
   }),
 };
+
+// Reviews API
+export const reviewsAPI = {
+  getByBooking: (bookingId) => apiRequest(`/reviews/booking/${bookingId}`),
+
+  upsert: (reviewData) => apiRequest('/reviews', {
+    method: 'POST',
+    body: JSON.stringify(reviewData),
+  }),
+};
