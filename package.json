@@ -25,6 +25,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "server:install": "npm install --prefix server",
+    "postinstall": "npm run server:install",
     "start": "npm --prefix server start"
   }
 }
